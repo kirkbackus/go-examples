@@ -1,0 +1,100 @@
+<html>
+<head>
+<script>
+
+var processor = null;
+
+function getXSLT() {
+	var req = new XMLHttpRequest ();
+	req.open('GET', 'test.xsl');
+	req.onreadystatechange = function () {
+		if (req.readyState == 4) {
+			if (req.status == 200) {
+				console.log(req.responseXML);
+				processor = new XSLTProcessor();
+				processor.importStylesheet(req.responseXML);
+				ready();
+				console.log(processor);
+			} else {
+				alert("Error getting XSLT");
+				console.log(req.responseXML);
+			}
+		}
+	}
+	req.send();
+}
+
+function setMessage() 
+{
+	var msg = document.getElementById("input").value;
+	var req = new XMLHttpRequest (); 
+	req.open ('POST', '/');
+	req.onreadystatechange = function (aEvt) { 
+        if (req.readyState == 4) {
+            	if (req.status != 200) {
+               			alert ("Error talking to RPC server");
+				console.log(req.responseXML);
+			}
+		}
+    	}; 
+
+	var xmlrpcrequest = "<?xml version='1.0'?>" + 
+                        "<methodCall><methodName>RPCMethods.SetMessage</methodName>" + 
+                        "<params><param><value><string>" + msg + 
+                        "</string></value></param></params></methodCall>"; 
+
+	console.log(xmlrpcrequest);
+	req.send (xmlrpcrequest); 
+}
+
+function refresh () {
+    var req = new XMLHttpRequest ();
+    req.open ('POST', '/_goRPC_'); 
+    req.onreadystatechange = function (aEvt) { 
+        if (req.readyState == 4) {
+            if (req.status == 200) {
+				console.log(req.responseXML);
+				var html = processor.transformToFragment(req.responseXML, document);
+				console.log(html);
+				document.getElementById("Display").innerHTML = "";
+				
+				if (html != null)
+					document.getElementById("Display").appendChild(html);
+            } else {
+                alert ("Error talking to RPC server");
+            }
+        }
+    };
+
+    var xmlrpcrequest = "<?xml version='1.0'?>" + 
+                        "<methodCall><methodName>RPCMethods.GetMessage</methodName>" + 
+                        "<params><param><int4>0</int4></param></params></methodCall>"; 
+
+	console.log(xmlrpcrequest);
+    req.send (xmlrpcrequest); 
+}
+
+function ready() {
+	refresh();
+
+	document.getElementById("Submit").addEventListener("click", setMessage);
+	document.getElementById("Refresh").addEventListener("click", refresh);
+}
+
+function init() {
+	getXSLT();
+	ready();
+}
+
+
+</script>
+</head>
+<body onload="init()">
+	<h1>XSLT With XML-RPC Server</h1>
+	<div id="Display">[loading message]</div>
+	<br />
+	<input type="text" id="input" />
+	<button id="Submit">Submit</button>
+	<button id="Refresh">refresh</button>
+</body>
+</html>
